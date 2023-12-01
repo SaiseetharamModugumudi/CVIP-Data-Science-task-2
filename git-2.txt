@@ -1,0 +1,122 @@
+##Data Science Task-2
+# Spam email Detection
+
+# Importing necessary libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+ 
+# Sample data (you can replace this with your own dataset)
+data = {
+    'text': ["Buy now and get 50% off!", "Important meeting tomorrow", "Win a free vacation!", "Check out this new product"],
+    'label': [1, 0, 1, 0]  # 1 for spam, 0 for non-spam
+}
+ 
+# Creating a DataFrame
+df = pd.DataFrame(data)
+ 
+# Splitting the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(df['text'], df['label'], test_size=0.2, random_state=42)
+ 
+# Vectorizing the text data
+vectorizer = CountVectorizer()
+X_train_vectorized = vectorizer.fit_transform(X_train)
+X_test_vectorized = vectorizer.transform(X_test)
+ 
+# Training the Naive Bayes classifier
+classifier = MultinomialNB()
+classifier.fit(X_train_vectorized, y_train)
+ 
+# Making predictions on the test set
+y_pred = classifier.predict(X_test_vectorized)
+ 
+# Evaluating the model
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+class_report = classification_report(y_test, y_pred)
+ 
+# Displaying the results
+print(f"Accuracy: {accuracy}")
+print(f"Confusion Matrix:\n{conf_matrix}")
+print(f"Classification Report:\n{class_report}")
+
+
+
+## Speech Emotion Recognisation ###
+
+# Install necessary libraries
+# !pip install librosa numpy pandas sklearn tensorflow
+ 
+# Importing libraries
+import librosa
+import librosa.display
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+# Load the RAVDESS dataset (or use your own dataset)
+# Download the dataset from: https://zenodo.org/record/1188976#.YfA4M5MzZPY
+# Extract and place the "Speech-Emotion-Recognition" folder in your working directory
+ 
+ravdess_path = "Speech-Emotion-Recognition/"
+metadata = pd.read_csv(ravdess_path + "data/RAVDESS_metadata.csv")
+ 
+# Extract features from audio files
+def extract_features(file_path):
+    try:
+        audio, sample_rate = librosa.load(file_path, res_type='kaiser_fast')
+        mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=13)
+        return np.mean(mfccs.T, axis=0)
+    except Exception as e:
+        print(f"Error encountered while parsing file: {file_path}")
+        return None
+ 
+# Extract features for each audio file
+metadata['features'] = metadata['file_path'].apply(extract_features)
+ 
+# Drop rows with missing features
+metadata = metadata.dropna()
+ 
+# Encode emotions to numerical values
+label_encoder = LabelEncoder()
+metadata['emotion_label'] = label_encoder.fit_transform(metadata['emotion'])
+ 
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    np.vstack(metadata['features'].to_numpy()),
+    metadata['emotion_label'].to_numpy(),
+    test_size=0.2,
+    random_state=42
+)
+ 
+# Build a simple neural network model
+model = keras.Sequential([
+    layers.Dense(256, activation='relu', input_shape=(X_train.shape[1],)),
+    layers.Dropout(0.3),
+    layers.Dense(128, activation='relu'),
+    layers.Dropout(0.3),
+    layers.Dense(8, activation='softmax')  # 8 emotions in RAVDESS dataset
+])
+ 
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+ 
+# Train the model
+model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2)
+ 
+# Evaluate the model
+y_pred = np.argmax(model.predict(X_test), axis=1)
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+class_report = classification_report(y_test, y_pred, target_names=label_encoder.classes_)
+ 
+# Display the results
+print(f"Accuracy: {accuracy}")
+print(f"Confusion Matrix:\n{conf_matrix}")
+print(f"Classification Report:\n{class_report}") 
